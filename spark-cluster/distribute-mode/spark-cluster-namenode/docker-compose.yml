@@ -1,0 +1,103 @@
+version: "2.2"
+services:
+  namenode:
+    image: tyrival/hadoop-namenode:2.7.4
+    container_name: namenode
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./namenode:/hadoop/dfs/name
+      - ./input_files:/input_files
+      - ./etc/hosts:/etc/hosts
+    ports:
+      - "50070:50070"
+      - "50470:50470"
+      - "8020:8020"
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+
+  datanode1:
+    image: tyrival/hadoop-datanode:2.7.4
+    restart: always
+    container_name: datanode1
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "50010:50010"
+      - "50075:50075"
+      - "50475:50475"
+      - "50020:50020"
+    volumes:
+      - ./datanode:/hadoop/dfs/data
+    env_file:
+      - ./hadoop.env
+      -
+  resourcemanager:
+    image: tyrival/hadoop-resourcemanager:2.7.4
+    container_name: resourcemanager
+    depends_on:
+      - namenode
+      - datanode1
+    env_file:
+      - hadoop.env
+
+  historyserver:
+    image: tyrival/hadoop-historyserver:2.7.4
+    container_name: historyserver
+    depends_on:
+      - namenode
+      - datanode1
+    volumes:
+      - ./historyserver:/hadoop/yarn/timeline
+    env_file:
+      - hadoop.env
+
+  nodemanager:
+    image: tyrival/hadoop-nodemanager:2.7.4
+    container_name: nodemanager
+    depends_on:
+      - namenode
+      - datanode1
+    env_file:
+      - hadoop.env
+
+  master:
+    image: gettyimages/spark:2.4.1-hadoop-3.0
+    command: bin/spark-class org.apache.spark.deploy.master.Master -h master
+    container_name: master
+    hostname: master
+    restart: always
+    environment:
+      MASTER: spark://master:7077
+      SPARK_CONF_DIR: /conf
+      SPARK_PUBLIC_DNS: localhost
+    links:
+      - namenode
+    expose:
+      - 7001
+      - 7002
+      - 7003
+      - 7004
+      - 7005
+      - 7077
+      - 6066
+    ports:
+      - 4040:4040
+      - 6066:6066
+      - 7077:7077
+      - 8080:8080
+    volumes:
+      - ./conf/master:/conf
+      - ./data:/tmp/data

@@ -1,0 +1,15 @@
+network.bind_host: 0.0.0.0
+cluster.name: elasticsearch_cluster
+cluster.routing.allocation.disk.threshold_enabled: false
+node.name: node1
+node.master: false
+node.data: true
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+network.host: 0.0.0.0
+discovery.zen.minimum_master_nodes: 1
+discovery.zen.ping.unicast.hosts: es1
+#http.basic.enabled: true #开关，开启会接管全部HTTP连接
+#http.basic.user: "admin" #账号
+#http.basic.password: "o.cnwx123" #密码
+#http.basic.ipwhitelist: ["localhost", "127.0.0.1"]

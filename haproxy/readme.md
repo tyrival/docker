@@ -1,0 +1,1 @@
+docker run -d --name haproxy --net=host -v /home/tyrival/Docker/haproxy:/usr/local/etc/haproxy haproxy

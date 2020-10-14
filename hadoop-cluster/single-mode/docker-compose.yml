@@ -1,0 +1,121 @@
+version: "3"
+
+services:
+  namenode:
+    image: tyrival/hadoop-namenode:2.7.4
+    container_name: namenode
+    volumes:
+      - ./namenode:/hadoop/dfs/name
+    ports:
+      - 50070:50070
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - hadoop.env
+
+  resourcemanager:
+    image: tyrival/hadoop-resourcemanager:2.7.4
+    container_name: resourcemanager
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - datanode3
+    env_file:
+      - hadoop.env
+
+  historyserver:
+    image: tyrival/hadoop-historyserver:2.7.4
+    container_name: historyserver
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - datanode3
+    volumes:
+      - ./historyserver:/hadoop/yarn/timeline
+    env_file:
+      - hadoop.env
+
+  nodemanager1:
+    image: tyrival/hadoop-nodemanager:2.7.4
+    container_name: nodemanager1
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - datanode3
+    env_file:
+      - hadoop.env
+
+  datanode1:
+    image: tyrival/hadoop-datanode:2.7.4
+    container_name: datanode1
+    depends_on:
+      - namenode
+    volumes:
+      - ./datanode1:/hadoop/dfs/data
+    env_file:
+      - hadoop.env
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+
+  datanode2:
+    image: tyrival/hadoop-datanode:2.7.4
+    container_name: datanode2
+    depends_on:
+      - namenode
+    volumes:
+      - ./datanode2:/hadoop/dfs/data
+    env_file:
+      - hadoop.env
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+
+  datanode3:
+    image: tyrival/hadoop-datanode:2.7.4
+    container_name: datanode3
+    depends_on:
+      - namenode
+    volumes:
+      - ./datanode3:/hadoop/dfs/data
+    env_file:
+      - hadoop.env
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070"
+
+  hive-server:
+    image: tyrival/hive:2.3.2
+    container_name: hive-server
+    env_file:
+      - hadoop.env
+    environment:
+      HIVE_CORE_CONF_javax_jdo_option_ConnectionURL: "jdbc:postgresql://hive-metastore/metastore"
+      SERVICE_PRECONDITION: "hive-metastore:9083"
+    ports:
+      - "10000:10000"
+
+  hive-metastore:
+    image: tyrival/hive:2.3.2
+    container_name: hive-metastore
+    env_file:
+      - hadoop.env
+    command: /opt/hive/bin/hive --service metastore
+    environment:
+      SERVICE_PRECONDITION: "namenode:50070 datanode1:50075 datanode2:50075 datanode3:50075 hive-metastore-postgresql:5432"
+    ports:
+      - "9083:9083"
+
+  hive-metastore-postgresql:
+    image: tyrival/hive-metastore-postgresql:2.3.0
+    container_name: hive-metastore-postgresql
+
+  presto-coordinator:
+    image: tyrival/prestodb:0.181
+    container_name: presto-coordinator
+    ports:
+      - "8090:8080"
+
+volumes:
+  namenode:
+  datanode:

@@ -1,0 +1,75 @@
+version: '3.5'
+services:
+  rmq-ns:
+    image: apacherocketmq/rocketmq:4.5.0
+    container_name: rmq-ns
+    ports:
+      - 9876:9876
+    volumes:
+      - /Users/tyrival/Docker/rocketmq/logs/nameserver:/opt/logs
+      - /Users/tyrival/Docker/rocketmq/store/nameserver:/opt/store
+    command: sh mqnamesrv
+    networks:
+        rmq:
+          aliases:
+            - rmq-ns
+
+  rmq-broker-m:
+    image: apacherocketmq/rocketmq:4.5.0
+    container_name: rmq-broker-m
+    ports:
+      - 10911:10911
+    volumes:
+      - /Users/tyrival/Docker/rocketmq/logs/broker-1:/opt/logs
+      - /Users/tyrival/Docker/rocketmq/store/broker-1:/opt/store
+      - /Users/tyrival/Docker/rocketmq/conf/broker-1.conf:/opt/rocketmq-4.5.0/conf/broker.conf 
+    environment:
+        TZ: Asia/Shanghai
+        NAMESRV_ADDR: "192.168.50.98:9876"
+        JAVA_OPTS: " -Duser.home=/opt"
+        JAVA_OPT_EXT: "-server -Xms256m -Xmx256m -Xmn256m"
+    command: sh mqbroker -c /opt/rocketmq-4.5.0/conf/broker.conf autoCreateTopicEnable=true &
+    links:
+      - rmq-ns:rmq-ns
+    networks:
+      rmq:
+        aliases:
+          - rmq-broker-m
+
+  rmq-broker-s:
+    image: apacherocketmq/rocketmq:4.5.0
+    container_name: rmq-broker-s
+    ports:
+      - 10909:10909
+    volumes:
+      - /Users/tyrival/Docker/rocketmq/logs/broker-2:/opt/logs
+      - /Users/tyrival/Docker/rocketmq/store/broker-2:/opt/store
+      - /Users/tyrival/Docker/rocketmq/conf/broker-2.conf:/opt/rocketmq-4.5.0/conf/broker.conf 
+    environment:
+        TZ: Asia/Shanghai
+        NAMESRV_ADDR: "192.168.50.98:9876"
+        JAVA_OPTS: " -Duser.home=/opt"
+        JAVA_OPT_EXT: "-server -Xms256m -Xmx256m -Xmn256m"
+    command: sh mqbroker -c /opt/rocketmq-4.5.0/conf/broker.conf autoCreateTopicEnable=true &
+    links:
+      - rmq-ns:rmq-ns
+    networks:
+      rmq:
+        aliases:
+          - rmq-broker-s
+
+  rmq-console:
+    image: styletang/rocketmq-console-ng
+    container_name: rmq-console
+    ports:
+      - 10900:8080
+    environment:
+        JAVA_OPTS: -Drocketmq.namesrv.addr=192.168.50.98:9876 -Dcom.rocketmq.sendMessageWithVIPChannel=false
+    networks:
+      rmq:
+        aliases:
+          - rmq-console
+networks:
+  rmq:
+    name: rmq
+    driver: bridge
